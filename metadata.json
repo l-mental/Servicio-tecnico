@@ -1,0 +1,6 @@
+{
+  "name": "TechFix Pro - Sistema de Gestión de Servicio Técnico",
+  "description": "Sistema integral de taller y servicio técnico con flujo de 4 etapas (Entrada, Desarmado, Recomposición, Salida), asignación de empleados, horarios, control de repuestos y reportes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
