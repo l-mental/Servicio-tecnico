@@ -106,9 +106,9 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#9E6CFF] to-[#8C57FF] hover:from-[#9155FD] hover:to-[#7E4EE6] text-white text-xs font-bold rounded-xl shadow-md shadow-purple-500/25 transition-all shrink-0"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>+ Registrar Nuevo Repuesto</span>
         </button>
       </div>
@@ -403,7 +403,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-slate-600 block mb-1 font-medium">Costo de Compra ($)</label>
+                  <label className="text-slate-600 block mb-1 font-medium">Costo de Compra (Bs.)</label>
                   <input
                     type="number"
                     min={0}
@@ -414,7 +414,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-600 block mb-1 font-medium">Precio Venta Cliente ($)</label>
+                  <label className="text-slate-600 block mb-1 font-medium">Precio Venta Cliente (Bs.)</label>
                   <input
                     type="number"
                     min={0}

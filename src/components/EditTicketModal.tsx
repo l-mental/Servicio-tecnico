@@ -378,7 +378,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
           {/* Section: Economic Details */}
           <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
             <div>
-              <label className="text-slate-400 block mb-1">Costo Mano de Obra ($)</label>
+              <label className="text-slate-400 block mb-1">Costo Mano de Obra (Bs.)</label>
               <input
                 type="number"
                 min={0}

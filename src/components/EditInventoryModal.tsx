@@ -129,7 +129,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 block mb-1">Costo Compra ($)</label>
+              <label className="text-slate-400 block mb-1">Costo Compra (Bs.)</label>
               <input
                 type="number"
                 min={0}
@@ -139,7 +139,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProps> = ({
               />
             </div>
             <div>
-              <label className="text-slate-400 block mb-1">Precio Venta Cliente ($)</label>
+              <label className="text-slate-400 block mb-1">Precio Venta Cliente (Bs.)</label>
               <input
                 type="number"
                 min={0}

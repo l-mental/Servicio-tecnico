@@ -63,12 +63,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-BO', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
+  const formatted = new Intl.NumberFormat('es-BO', {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+  return `Bs. ${formatted}`;
 }
 
 export function formatDateTime(isoString: string): string {

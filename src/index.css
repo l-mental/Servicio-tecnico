@@ -2,13 +2,68 @@
 
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background-color: #F4F5FA;
+    color: #4B465C;
   }
   
   .font-mono, [class*="font-mono"] {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: Arial, monospace;
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* Materio Bootstrap 5 Theme Utilities */
+.materio-card {
+  background-color: #FFFFFF;
+  border-radius: 1rem;
+  border: 1px solid rgba(75, 70, 92, 0.08);
+  box-shadow: 0 4px 18px 0 rgba(76, 78, 100, 0.08);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.materio-card:hover {
+  box-shadow: 0 6px 22px 0 rgba(76, 78, 100, 0.12);
+}
+
+.materio-purple-btn {
+  background: linear-gradient(98deg, #9E6CFF 0%, #8C57FF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px 0 rgba(140, 87, 255, 0.4);
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+.materio-purple-btn:hover {
+  background: linear-gradient(98deg, #9155FD 0%, #7E4EE6 100%);
+  box-shadow: 0 4px 12px 0 rgba(140, 87, 255, 0.5);
+  color: #FFFFFF;
+}
+
+/* Materio Soft Label Badges */
+.badge-label-primary {
+  background-color: rgba(140, 87, 255, 0.12) !important;
+  color: #8C57FF !important;
+  border: 1px solid rgba(140, 87, 255, 0.2);
+}
+.badge-label-success {
+  background-color: rgba(86, 202, 0, 0.12) !important;
+  color: #439E00 !important;
+  border: 1px solid rgba(86, 202, 0, 0.2);
+}
+.badge-label-warning {
+  background-color: rgba(255, 180, 0, 0.14) !important;
+  color: #C28900 !important;
+  border: 1px solid rgba(255, 180, 0, 0.25);
+}
+.badge-label-danger {
+  background-color: rgba(255, 76, 81, 0.12) !important;
+  color: #E0353A !important;
+  border: 1px solid rgba(255, 76, 81, 0.2);
+}
+.badge-label-info {
+  background-color: rgba(22, 177, 255, 0.12) !important;
+  color: #0E8ECD !important;
+  border: 1px solid rgba(22, 177, 255, 0.2);
 }
 
 @media print {

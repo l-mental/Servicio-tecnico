@@ -11,7 +11,7 @@ import {
   saveCurrentUser, 
   resetToDefaultData 
 } from './services/storage';
-import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { KanbanBoard } from './components/KanbanBoard';
 import { TicketList } from './components/TicketList';
 import { TicketModal } from './components/TicketModal';
@@ -27,6 +27,7 @@ import { PrintTicketView } from './components/PrintTicketView';
 import { LoginModal } from './components/LoginModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { STAGE_CONFIG } from './utils/helpers';
+import { Menu, Plus } from 'lucide-react';
 
 export default function App() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -46,6 +47,7 @@ export default function App() {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [printingTicket, setPrintingTicket] = useState<Ticket | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -340,10 +342,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#F4F5FA] flex flex-row font-sans selection:bg-[#8C57FF] selection:text-white antialiased text-[#4B465C]">
       
-      {/* Top Navigation Header */}
-      <Header
+      {/* Materio Lateral Sidebar Navigation */}
+      <Sidebar
         currentView={currentView}
         onViewChange={(view) => setCurrentView(view)}
         currentUser={currentUser}
@@ -351,10 +353,87 @@ export default function App() {
         onOpenNewTicket={() => setIsNewTicketOpen(true)}
         tickets={tickets}
         onResetData={handleResetData}
+        isMobileOpen={isMobileSidebarOpen}
+        setIsMobileOpen={setIsMobileSidebarOpen}
       />
 
-      {/* Main Workspace Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main Full-Screen Workspace Area */}
+      <div className="flex-1 min-w-0 w-full flex flex-col min-h-screen bg-[#F4F5FA]">
+        
+        {/* Materio Floating Header Bar */}
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4 shadow-[0_2px_10px_0_rgba(76,78,100,0.06)]">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="p-2 -ml-1 text-slate-600 hover:text-[#8C57FF] hover:bg-purple-50 rounded-xl md:hidden transition-colors shrink-0"
+              title="Abrir menú lateral"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Materio Search Input */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 text-slate-400 w-full max-w-xs focus-within:border-[#8C57FF] focus-within:ring-2 focus-within:ring-purple-500/10 transition-all">
+              <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span className="text-xs text-slate-500">Buscar en taller...</span>
+              <span className="ml-auto text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-400">Ctrl+/</span>
+            </div>
+
+            {/* View Title Pill for Mobile or Desktop */}
+            <div className="min-w-0 pl-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-slate-900 tracking-tight">
+                  {currentView === 'kanban' && 'Tablero 4 Etapas'}
+                  {currentView === 'list' && 'Directorio de Órdenes'}
+                  {currentView === 'staff' && 'Personal & Turnos'}
+                  {currentView === 'inventory' && 'Repuestos & Insumos'}
+                  {currentView === 'reports' && 'Analíticas & Porcentajes'}
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-[#8C57FF] border border-purple-200">
+                  Bolivianos (Bs.)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Header Actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* User chip */}
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              className="flex items-center gap-2 p-1.5 pr-3 rounded-full hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200 text-left"
+              title="Perfil de operador"
+            >
+              <div className="relative">
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-8 h-8 rounded-full object-cover border border-purple-200"
+                />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+              </div>
+              <div className="hidden xl:block text-xs">
+                <div className="font-bold text-slate-800 leading-none">{currentUser.name.split(' ')[0]}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 capitalize">{currentUser.role}</div>
+              </div>
+            </button>
+
+            {/* Materio Primary Action Button */}
+            <button
+              onClick={() => setIsNewTicketOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#9E6CFF] to-[#8C57FF] hover:from-[#9155FD] hover:to-[#7E4EE6] text-white text-xs font-bold rounded-xl shadow-md shadow-purple-500/30 transition-all active:scale-98"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span className="hidden sm:inline">+ Nueva Orden</span>
+              <span className="sm:hidden">Ingreso</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Fullscreen Fluid Content Area */}
+        <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
         
         {currentView === 'kanban' && (
           <KanbanBoard
@@ -500,13 +579,16 @@ export default function App() {
       {/* Toast Feedback Messages */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
 
-      {/* Quiet Footer */}
-      <footer className="mt-auto border-t border-slate-200/80 bg-white py-4 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+      {/* Quiet Full-Width Footer */}
+      <footer className="mt-auto border-t border-slate-200/80 bg-white py-3.5 text-xs text-slate-500">
+        <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-extrabold text-slate-800">TechFix Pro</span>
             <span>·</span>
-            <span>Sistema Integral de Servicio Técnico en 4 Etapas con CRUD Completo</span>
+            <span className="font-bold text-[#8C57FF]">Materio Pro Edition</span>
+            <span>·</span>
+            <span>Servicio Técnico en 4 Etapas</span>
+            <span className="hidden sm:inline">· Moneda: Bolivianos (Bs.) · Fuente: Arial · Pantalla Completa</span>
           </div>
           <div className="text-[11px] text-slate-400 font-mono">
             01 Entrada · 02 Desarmado · 03 Recomposición · 04 Salida & QC
@@ -514,6 +596,8 @@ export default function App() {
         </div>
       </footer>
 
-    </div>
+      </div> {/* Closes flex-1 content area */}
+
+    </div> /* Closes outer min-h-screen flex-row */
   );
 }

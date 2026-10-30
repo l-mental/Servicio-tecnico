@@ -105,10 +105,10 @@ export const TicketList: React.FC<TicketListProps> = ({
 
         <button
           onClick={onOpenNewTicket}
-          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#9E6CFF] to-[#8C57FF] hover:from-[#9155FD] hover:to-[#7E4EE6] text-white text-xs font-bold rounded-xl shadow-md shadow-purple-500/25 transition-all shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          <span>Nueva Orden</span>
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>+ Nueva Orden</span>
         </button>
       </div>
 

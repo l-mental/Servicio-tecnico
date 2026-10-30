@@ -427,7 +427,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 block mb-1 font-medium">Mano de Obra Est. ($)</label>
+                <label className="text-slate-600 block mb-1 font-medium">Mano de Obra Est. (Bs.)</label>
                 <input
                   type="number"
                   min={0}

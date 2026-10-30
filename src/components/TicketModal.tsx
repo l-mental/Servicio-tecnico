@@ -843,7 +843,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                     />
                     <input
                       type="number"
-                      placeholder="Precio Venta ($)"
+                      placeholder="Precio Venta (Bs.)"
                       value={customPartPrice || ''}
                       onChange={(e) => setCustomPartPrice(Number(e.target.value))}
                       className="p-1.5 border border-slate-300 rounded bg-white text-xs font-mono"
@@ -908,7 +908,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">Costo Mano de Obra:</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-slate-400">$</span>
+                      <span className="text-slate-400 font-bold text-xs">Bs.</span>
                       <input
                         type="number"
                         value={currentTicket.laborCost}

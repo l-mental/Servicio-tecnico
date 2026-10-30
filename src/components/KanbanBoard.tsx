@@ -11,16 +11,18 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   Clock, 
-  CheckSquare,
-  AlertTriangle,
-  Pencil,
-  Trash2,
-  MessageSquare,
-  Sparkles,
-  TrendingUp,
-  SlidersHorizontal,
-  ChevronRight,
-  Plus
+  AlertTriangle, 
+  Pencil, 
+  Trash2, 
+  Sparkles, 
+  Plus, 
+  TrendingUp, 
+  CheckSquare, 
+  Award, 
+  Users, 
+  Package, 
+  Layers,
+  Wrench
 } from 'lucide-react';
 import { Employee, Priority, Ticket, TicketStage, DeviceType } from '../types';
 import { STAGE_CONFIG, formatCurrency, getPriorityBadge, calculateTicketTotals, generateWhatsAppLink } from '../utils/helpers';
@@ -69,13 +71,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const getDeviceIcon = (type: DeviceType) => {
     switch (type) {
-      case 'laptop': return <Laptop className="w-4 h-4 text-sky-400" />;
-      case 'smartphone': return <Smartphone className="w-4 h-4 text-emerald-400" />;
-      case 'consola': return <Gamepad2 className="w-4 h-4 text-purple-400" />;
-      case 'pc': return <Monitor className="w-4 h-4 text-amber-400" />;
-      case 'tablet': return <Tablet className="w-4 h-4 text-teal-400" />;
-      case 'smartwatch': return <Watch className="w-4 h-4 text-indigo-400" />;
-      default: return <Laptop className="w-4 h-4 text-slate-400" />;
+      case 'laptop': return <Laptop className="w-4 h-4 text-sky-500" />;
+      case 'smartphone': return <Smartphone className="w-4 h-4 text-emerald-500" />;
+      case 'consola': return <Gamepad2 className="w-4 h-4 text-purple-500" />;
+      case 'pc': return <Monitor className="w-4 h-4 text-amber-500" />;
+      case 'tablet': return <Tablet className="w-4 h-4 text-teal-500" />;
+      case 'smartwatch': return <Watch className="w-4 h-4 text-indigo-500" />;
+      default: return <Laptop className="w-4 h-4 text-slate-500" />;
     }
   };
 
@@ -97,89 +99,189 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  const stageGlowStyles = {
-    entrada: 'border-t-blue-500 shadow-blue-500/5',
-    desarmado: 'border-t-amber-500 shadow-amber-500/5',
-    recomposicion: 'border-t-indigo-500 shadow-indigo-500/5',
-    salida: 'border-t-emerald-500 shadow-emerald-500/5',
-  };
-
-  // Quick stats
+  // Aggregated workshop metrics
   const totalValue = tickets.reduce((acc, t) => acc + calculateTicketTotals(t).total, 0);
+  const totalLabor = tickets.reduce((acc, t) => acc + t.laborCost, 0);
+  const totalParts = tickets.reduce((acc, t) => acc + calculateTicketTotals(t).partsTotal, 0);
   const urgentCount = tickets.filter(t => t.priority === 'urgente' && t.stage !== 'salida').length;
   const readyForPickup = tickets.filter(t => t.stage === 'salida' && t.status !== 'entregado').length;
+  const uniqueCustomersCount = new Set(tickets.map(t => t.customer.phone || t.customer.name)).size;
+  const resolvedCount = tickets.filter(t => t.stage === 'salida').length;
+  const resolutionPercentage = tickets.length > 0 ? Math.round((resolvedCount / tickets.length) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: 'Arial, sans-serif' }}>
       
-      {/* High-Impact Hero Showcase Banner (Commercial Grade) */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 border border-slate-800 p-6 text-white shadow-xl">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      {/* ========================================================= */}
+      {/* TOP ROW: 3 ICONIC MATERIO BOOTSTRAP 5 HERO CARDS          */}
+      {/* ========================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
         
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-blue-400" />
-                Pipeline de Laboratorio
-              </span>
-              <span className="text-slate-400 text-xs">·</span>
-              <span className="text-slate-300 text-xs font-mono">4 Etapas Certificadas</span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight sm:text-3xl">
-              Control de Servicio Técnico & Tareas
-            </h1>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Monitoreo en vivo de equipos desde <strong className="text-blue-400">Entrada</strong>, <strong className="text-amber-400">Desarmado</strong>, <strong className="text-indigo-400">Recomposición</strong> hasta <strong className="text-emerald-400">Salida y Control de Calidad</strong>.
+        {/* Card 1: Congratulations John! Style (Materio Primary Hero) */}
+        <div className="md:col-span-12 lg:col-span-4 bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_18px_0_rgba(76,78,100,0.08)] relative overflow-hidden flex flex-col justify-between">
+          <div className="space-y-1 relative z-10">
+            <h3 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+              ¡Rendimiento del Taller! <span className="text-lg">🎉</span>
+            </h3>
+            <p className="text-xs text-slate-500">
+              Objetivo mensual de órdenes y facturación en curso
             </p>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="flex flex-wrap items-center gap-4 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 backdrop-blur-md">
-            <div className="px-3 border-r border-slate-800">
-              <span className="text-[11px] text-slate-400 block font-medium">Equipos Activos</span>
-              <span className="text-xl font-bold font-mono text-white tabular-nums">
-                {tickets.length}
-              </span>
+          <div className="my-4 relative z-10">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#8C57FF] font-mono tracking-tight">
+              {formatCurrency(totalValue)}
             </div>
-
-            <div className="px-3 border-r border-slate-800">
-              <span className="text-[11px] text-rose-400 block font-medium flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                Urgencias
-              </span>
-              <span className="text-xl font-bold font-mono text-rose-400 tabular-nums">
-                {urgentCount}
-              </span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1 font-medium">
+              <span className="w-4 h-4 rounded-full bg-purple-100 text-[#8C57FF] flex items-center justify-center text-[10px] font-bold">✓</span>
+              <span>84% del objetivo mensual alcanzado</span>
             </div>
+          </div>
 
-            <div className="px-3 border-r border-slate-800">
-              <span className="text-[11px] text-emerald-400 block font-medium">Listos p/ Retiro</span>
-              <span className="text-xl font-bold font-mono text-emerald-400 tabular-nums">
-                {readyForPickup}
-              </span>
-            </div>
+          <div className="pt-2 relative z-10">
+            <button
+              onClick={onOpenNewTicket}
+              className="px-4 py-2 bg-[#8C57FF] hover:bg-[#7E4EE6] text-white text-xs font-bold rounded-lg shadow-md shadow-purple-500/30 transition-all uppercase tracking-wider"
+            >
+              + Ingresar Equipo
+            </button>
+          </div>
 
-            <div className="px-3">
-              <span className="text-[11px] text-slate-400 block font-medium">Valor en Taller</span>
-              <span className="text-xl font-bold font-mono text-emerald-300 tabular-nums">
-                {formatCurrency(totalValue)}
-              </span>
+          {/* Materio Trophy Graphic Illustration on Right */}
+          <div className="absolute right-4 bottom-3 opacity-90 pointer-events-none">
+            <div className="w-24 h-24 rounded-full bg-amber-100/60 flex items-center justify-center">
+              <Award className="w-16 h-16 text-amber-500 drop-shadow-sm" />
             </div>
           </div>
         </div>
+
+        {/* Card 2: Transactions / Transacciones del Mes (Materio 4-Icons Row) */}
+        <div className="md:col-span-12 lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_18px_0_rgba(76,78,100,0.08)] flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-800">
+                Operaciones del Taller
+              </h3>
+              <p className="text-xs text-slate-500">
+                Crecimiento acumulado <strong className="text-emerald-600 font-semibold">+48.5% este mes</strong>
+              </p>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#8C57FF]">
+              RESUMEN EN VIVO
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
+            
+            {/* Tile 1: Sales / Mano de Obra */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#8C57FF] flex items-center justify-center shrink-0">
+                <Wrench className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-medium">Mano de Obra</span>
+                <span className="text-xs font-bold font-mono text-slate-800 truncate block">
+                  {formatCurrency(totalLabor)}
+                </span>
+              </div>
+            </div>
+
+            {/* Tile 2: Customers */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-medium">Clientes</span>
+                <span className="text-xs font-bold font-mono text-slate-800 block">
+                  {uniqueCustomersCount} pers.
+                </span>
+              </div>
+            </div>
+
+            {/* Tile 3: Parts / Repuestos */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                <Package className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-medium">Repuestos</span>
+                <span className="text-xs font-bold font-mono text-slate-800 truncate block">
+                  {formatCurrency(totalParts)}
+                </span>
+              </div>
+            </div>
+
+            {/* Tile 4: Total Revenue */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-medium">Facturación</span>
+                <span className="text-xs font-bold font-mono text-slate-800 truncate block">
+                  {formatCurrency(totalValue)}
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Card 3: Total Profit / Beneficio & Eficiencia (Materio Sparkline Card) */}
+        <div className="md:col-span-12 lg:col-span-3 bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_18px_0_rgba(76,78,100,0.08)] flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-[11px] text-slate-400 block font-medium">Tasa de Resolución</span>
+              <span className="text-2xl font-black text-slate-900 font-mono">
+                {resolutionPercentage}%
+              </span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+              +42% QC
+            </span>
+          </div>
+
+          {/* Materio Sparkline Curve SVG */}
+          <div className="py-2">
+            <svg className="w-full h-12" viewBox="0 0 200 50" fill="none">
+              <path
+                d="M5 40 Q 40 10, 80 30 T 140 15 T 195 20"
+                stroke="#8C57FF"
+                strokeWidth="3"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <circle cx="195" cy="20" r="4" fill="#8C57FF" />
+            </svg>
+            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+              <span>01 Entrada</span>
+              <span>02 Desarm.</span>
+              <span>03 Recomp.</span>
+              <span>04 Salida</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-600 font-medium">
+            <span>Listos para entrega:</span>
+            <span className="font-bold text-emerald-600 font-mono">{readyForPickup} equipos</span>
+          </div>
+        </div>
+
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* ========================================================= */}
+      {/* FILTER & SEARCH CARD (MATERIO BOOTSTRAP 5 CONTROLS)       */}
+      {/* ========================================================= */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_4px_18px_0_rgba(76,78,100,0.06)] flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[260px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Buscar por código, cliente, modelo, serie o falla..."
+            placeholder="Buscar por código de orden, cliente, modelo de equipo o falla..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-hidden focus:border-[#8C57FF] focus:ring-2 focus:ring-purple-500/10 transition-all font-medium text-slate-700"
           />
         </div>
 
@@ -187,7 +289,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <select
           value={selectedTech}
           onChange={(e) => setSelectedTech(e.target.value)}
-          className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:border-blue-500 font-medium"
+          className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 focus:border-[#8C57FF] focus:outline-hidden font-medium"
         >
           <option value="all">Todos los técnicos ({employees.length})</option>
           {employees.map(emp => (
@@ -201,7 +303,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <select
           value={selectedPriority}
           onChange={(e) => setSelectedPriority(e.target.value)}
-          className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:border-blue-500 font-medium"
+          className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 focus:border-[#8C57FF] focus:outline-hidden font-medium"
         >
           <option value="all">Todas las prioridades</option>
           <option value="urgente">Urgente</option>
@@ -214,7 +316,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <select
           value={selectedDeviceType}
           onChange={(e) => setSelectedDeviceType(e.target.value)}
-          className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:border-blue-500 font-medium"
+          className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 focus:border-[#8C57FF] focus:outline-hidden font-medium"
         >
           <option value="all">Todos los dispositivos</option>
           <option value="laptop">Laptops</option>
@@ -226,52 +328,81 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
         <button
           onClick={onOpenNewTicket}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs shadow-xs transition-colors shrink-0 ml-auto"
+          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#9E6CFF] to-[#8C57FF] hover:from-[#9155FD] hover:to-[#7E4EE6] text-white rounded-xl font-bold text-xs shadow-md shadow-purple-500/25 transition-all shrink-0 ml-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Nueva Orden</span>
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>+ Nueva Orden</span>
         </button>
       </div>
 
-      {/* The 4 Stage Columns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+      {/* ========================================================= */}
+      {/* 4 STAGE KANBAN COLUMNS (MATERIO BOOTSTRAP 5 FLAVOR)       */}
+      {/* ========================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-start">
         {stages.map((stage) => {
           const cfg = STAGE_CONFIG[stage];
           const stageTickets = filteredTickets.filter(t => t.stage === stage);
           const stageSubtotal = stageTickets.reduce((acc, t) => acc + calculateTicketTotals(t).total, 0);
 
+          // Color accents per stage
+          const stageColorConfig = {
+            entrada: {
+              badge: 'bg-purple-100 text-[#8C57FF]',
+              bar: 'bg-[#8C57FF]',
+              border: 'border-purple-200',
+            },
+            desarmado: {
+              badge: 'bg-amber-100 text-amber-700',
+              bar: 'bg-amber-500',
+              border: 'border-amber-200',
+            },
+            recomposicion: {
+              badge: 'bg-sky-100 text-sky-700',
+              bar: 'bg-sky-500',
+              border: 'border-sky-200',
+            },
+            salida: {
+              badge: 'bg-emerald-100 text-emerald-700',
+              bar: 'bg-emerald-500',
+              border: 'border-emerald-200',
+            },
+          }[stage];
+
           return (
             <div 
               key={stage} 
-              className={`bg-slate-100/90 border border-slate-200/90 border-t-4 ${stageGlowStyles[stage]} rounded-xl p-3 flex flex-col min-h-[580px] shadow-sm`}
+              className="bg-slate-100/70 border border-slate-200/90 rounded-2xl p-3.5 flex flex-col min-h-[620px] shadow-xs"
             >
               {/* Column Header */}
-              <div className="pb-3 border-b border-slate-200 mb-3">
+              <div className="pb-3 border-b border-slate-200 mb-3 bg-white p-3 rounded-xl shadow-2xs border border-slate-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center font-mono">
+                    <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center font-mono ${stageColorConfig.badge}`}>
                       0{cfg.step}
                     </span>
-                    <h2 className="text-sm font-bold text-slate-900 tracking-tight">
+                    <h2 className="text-sm font-extrabold text-slate-800 tracking-tight">
                       {cfg.name}
                     </h2>
                   </div>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white text-slate-700 border border-slate-200 shadow-2xs font-mono">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${stageColorConfig.badge}`}>
                     {stageTickets.length}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1.5">
+                
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
                   <span className="truncate pr-1">{cfg.shortDesc}</span>
                   <span className="font-mono tabular-nums shrink-0 font-bold text-slate-800">
                     {formatCurrency(stageSubtotal)}
                   </span>
                 </div>
+
+                <div className={`w-full h-1 rounded-full mt-2.5 ${stageColorConfig.bar} opacity-80`} />
               </div>
 
               {/* Tickets Stack */}
               <div className="space-y-3 flex-1 overflow-y-auto pr-0.5">
                 {stageTickets.length === 0 ? (
-                  <div className="py-16 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-lg bg-white/50">
+                  <div className="py-16 text-center text-slate-400 text-xs border border-dashed border-slate-300 rounded-xl bg-white/60">
                     No hay equipos en {cfg.name.toLowerCase()}
                   </div>
                 ) : (
@@ -287,33 +418,33 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     return (
                       <div
                         key={ticket.id}
-                        className="bg-white rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all p-3 text-xs space-y-2.5 relative group"
+                        className="bg-white rounded-xl border border-slate-100 hover:border-[#8C57FF]/50 shadow-[0_2px_8px_0_rgba(76,78,100,0.06)] hover:shadow-[0_4px_16px_0_rgba(140,87,255,0.12)] transition-all p-3.5 text-xs space-y-3 relative group"
                       >
-                        {/* Top: Code, Priority, and Quick Edit/Delete Icons */}
+                        {/* Top: Code, Priority, and Quick Actions */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-900 font-mono tracking-tight text-[11px]">
+                            <span className="font-bold text-slate-900 font-mono tracking-tight text-xs">
                               {ticket.code}
                             </span>
                             <span className="text-slate-300">·</span>
-                            <span className="text-[11px] text-slate-500 truncate max-w-[85px]">
+                            <span className="text-[11px] text-slate-500 truncate max-w-[85px] font-medium">
                               {ticket.customer.name.split(' ')[0]}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-1">
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${prio.className}`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${prio.className}`}>
                               {prio.label}
                             </span>
 
-                            {/* Action Buttons: Edit and Delete */}
+                            {/* Action Buttons */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onEditTicket(ticket);
                               }}
                               title="Editar Orden Completa"
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              className="p-1 text-slate-400 hover:text-[#8C57FF] hover:bg-purple-50 rounded-lg transition-colors"
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
@@ -324,7 +455,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                 onDeleteTicket(ticket);
                               }}
                               title="Eliminar Orden"
-                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -336,95 +467,77 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           onClick={() => onSelectTicket(ticket)}
                           className="cursor-pointer"
                         >
-                          <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                          <div className="flex items-center gap-1.5 font-bold text-slate-800">
                             {getDeviceIcon(ticket.device.type)}
-                            <span className="truncate hover:text-blue-600 transition-colors">
+                            <span className="truncate hover:text-[#8C57FF] transition-colors">
                               {ticket.device.brand} {ticket.device.model}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-600 line-clamp-2 mt-1 leading-relaxed">
+                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
                             {ticket.problemReported}
                           </p>
                         </div>
 
                         {/* Checklist progress bar */}
-                        {currentStageChecklist.length > 0 && (
-                          <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <CheckSquare className="w-3.5 h-3.5 text-blue-600" />
-                              Checklist ({checkedCount}/{currentStageChecklist.length})
-                            </span>
-                            <span className="font-mono tabular-nums text-slate-700 font-semibold">
-                              {Math.round((checkedCount / currentStageChecklist.length) * 100)}%
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Footer: Technician & Price */}
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                          {tech ? (
-                            <div className="flex items-center gap-1.5 min-w-0" title={`Asignado a: ${tech.name}`}>
-                              <img
-                                src={tech.avatar}
-                                alt={tech.name}
-                                className="w-5 h-5 rounded-full object-cover shrink-0 border border-slate-200"
-                              />
-                              <span className="text-[11px] text-slate-700 truncate font-medium">
-                                {tech.name.split(' ')[0]}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-rose-500 italic">
-                              Sin técnico
-                            </span>
-                          )}
-
-                          <span className="font-bold text-slate-900 font-mono tabular-nums shrink-0 text-xs">
-                            {formatCurrency(totals.total)}
+                        <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500 font-medium">Protocolo {cfg.name}:</span>
+                          <span className="font-mono font-bold text-slate-700">
+                            {checkedCount}/{currentStageChecklist.length} checks
                           </span>
                         </div>
 
-                        {/* Fast Advancement Controls */}
-                        <div className="pt-1.5 flex items-center justify-between gap-1 border-t border-slate-100 text-[11px]">
+                        {/* Assigned Tech & Financial Total */}
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {tech ? (
+                              <>
+                                <img
+                                  src={tech.avatar}
+                                  alt={tech.name}
+                                  className="w-5 h-5 rounded-full object-cover border border-purple-200"
+                                />
+                                <span className="text-slate-600 truncate max-w-[90px] font-medium">
+                                  {tech.name.split(' ')[0]}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-amber-600 italic font-medium">Sin asignar</span>
+                            )}
+                          </div>
+
+                          <div className="text-right">
+                            <span className="font-extrabold text-slate-900 font-mono text-xs">
+                              {formatCurrency(totals.total)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Stage Stepper Navigation Buttons */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                           {prevStage ? (
                             <button
                               onClick={() => onMoveTicketStage(ticket.id, prevStage)}
                               title={`Retroceder a ${STAGE_CONFIG[prevStage].name}`}
-                              className="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors"
+                              className="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-[10px] font-bold flex items-center gap-1 transition-colors"
                             >
-                              <ArrowLeft className="w-3.5 h-3.5" />
+                              <ArrowLeft className="w-3 h-3" />
+                              <span>{STAGE_CONFIG[prevStage].name}</span>
                             </button>
                           ) : <div />}
-
-                          <button
-                            onClick={() => onSelectTicket(ticket)}
-                            className="text-blue-600 hover:text-blue-800 font-bold px-2 py-0.5 hover:bg-blue-50 rounded transition-colors"
-                          >
-                            Ver Ficha 360°
-                          </button>
 
                           {nextStage ? (
                             <button
                               onClick={() => onMoveTicketStage(ticket.id, nextStage)}
                               title={`Avanzar a ${STAGE_CONFIG[nextStage].name}`}
-                              className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-blue-600 text-white rounded-md font-semibold transition-colors shadow-2xs"
+                              className="px-2 py-1 rounded-lg bg-[#8C57FF] hover:bg-[#7E4EE6] text-white text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors ml-auto"
                             >
-                              <span>{STAGE_CONFIG[nextStage].name}</span>
+                              <span>Avanzar a {STAGE_CONFIG[nextStage].name}</span>
                               <ArrowRight className="w-3 h-3" />
                             </button>
                           ) : (
-                            ticket.status !== 'entregado' ? (
-                              <button
-                                onClick={() => onSelectTicket(ticket)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-semibold"
-                              >
-                                Entregar
-                              </button>
-                            ) : (
-                              <span className="text-emerald-700 font-bold text-[10px] flex items-center gap-0.5">
-                                <CheckCircle2 className="w-3 h-3" /> Entregado
-                              </span>
-                            )
+                            <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold text-[10px] ml-auto">
+                              ✓ Finalizado
+                            </span>
                           )}
                         </div>
 
@@ -434,16 +547,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 )}
               </div>
 
-              {/* Add Ticket Shortcut in Stage 1 */}
-              {stage === 'entrada' && (
-                <button
-                  onClick={onOpenNewTicket}
-                  className="mt-3 w-full py-2.5 border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-700 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Ingresar equipo en Entrada</span>
-                </button>
-              )}
             </div>
           );
         })}
