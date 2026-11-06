@@ -67,7 +67,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return matchesSearch && matchesTech && matchesPriority && matchesDevice;
   });
 
-  const stages: TicketStage[] = ['entrada', 'desarmado', 'recomposicion', 'salida'];
+  const stages: TicketStage[] = ['por_asignar', 'en_reparacion', 'en_prueba', 'entregado'];
+
+  const getCanonicalStage = (stg: TicketStage): 'por_asignar' | 'en_reparacion' | 'en_prueba' | 'entregado' => {
+    if (stg === 'entrada') return 'por_asignar';
+    if (stg === 'desarmado') return 'en_reparacion';
+    if (stg === 'recomposicion') return 'en_prueba';
+    if (stg === 'salida') return 'entregado';
+    return stg as 'por_asignar' | 'en_reparacion' | 'en_prueba' | 'entregado';
+  };
 
   const getDeviceIcon = (type: DeviceType) => {
     switch (type) {
@@ -82,20 +90,22 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const getNextStage = (current: TicketStage): TicketStage | null => {
-    switch (current) {
-      case 'entrada': return 'desarmado';
-      case 'desarmado': return 'recomposicion';
-      case 'recomposicion': return 'salida';
-      case 'salida': return null;
+    const c = getCanonicalStage(current);
+    switch (c) {
+      case 'por_asignar': return 'en_reparacion';
+      case 'en_reparacion': return 'en_prueba';
+      case 'en_prueba': return 'entregado';
+      case 'entregado': return null;
     }
   };
 
   const getPrevStage = (current: TicketStage): TicketStage | null => {
-    switch (current) {
-      case 'entrada': return null;
-      case 'desarmado': return 'entrada';
-      case 'recomposicion': return 'desarmado';
-      case 'salida': return 'recomposicion';
+    const c = getCanonicalStage(current);
+    switch (c) {
+      case 'por_asignar': return null;
+      case 'en_reparacion': return 'por_asignar';
+      case 'en_prueba': return 'en_reparacion';
+      case 'entregado': return 'en_prueba';
     }
   };
 
@@ -341,32 +351,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-start">
         {stages.map((stage) => {
           const cfg = STAGE_CONFIG[stage];
-          const stageTickets = filteredTickets.filter(t => t.stage === stage);
-          const stageSubtotal = stageTickets.reduce((acc, t) => acc + calculateTicketTotals(t).total, 0);
+          const stageTickets = filteredTickets.filter(t => getCanonicalStage(t.stage) === stage);
+          const stageSubtotal = stageTickets.reduce((acc, t) => acc + calculateTicketTotals(t).fixedCost, 0);
 
           // Color accents per stage
-          const stageColorConfig = {
-            entrada: {
-              badge: 'bg-purple-100 text-[#8C57FF]',
-              bar: 'bg-[#8C57FF]',
-              border: 'border-purple-200',
-            },
-            desarmado: {
-              badge: 'bg-amber-100 text-amber-700',
-              bar: 'bg-amber-500',
-              border: 'border-amber-200',
-            },
-            recomposicion: {
-              badge: 'bg-sky-100 text-sky-700',
-              bar: 'bg-sky-500',
-              border: 'border-sky-200',
-            },
-            salida: {
-              badge: 'bg-emerald-100 text-emerald-700',
-              bar: 'bg-emerald-500',
-              border: 'border-emerald-200',
-            },
-          }[stage];
+          const stageColorConfig = (
+            stage === 'por_asignar' ? { badge: 'bg-blue-100 text-blue-800', bar: 'bg-blue-600', border: 'border-blue-200' } :
+            stage === 'en_reparacion' ? { badge: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500', border: 'border-amber-200' } :
+            stage === 'en_prueba' ? { badge: 'bg-purple-100 text-purple-800', bar: 'bg-purple-500', border: 'border-purple-200' } :
+            { badge: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500', border: 'border-emerald-200' }
+          );
 
           return (
             <div 
@@ -410,8 +404,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     const tech = employees.find(e => e.id === ticket.assignedTechnicianId);
                     const prio = getPriorityBadge(ticket.priority);
                     const totals = calculateTicketTotals(ticket);
-                    const currentStageChecklist = ticket.checklists[ticket.stage] || [];
-                    const checkedCount = currentStageChecklist.filter(c => c.checked).length;
+                    const checklistKey = (s: TicketStage) => {
+                      if (s === 'por_asignar' || s === 'entrada') return 'entrada';
+                      if (s === 'en_reparacion' || s === 'desarmado') return 'desarmado';
+                      if (s === 'en_prueba' || s === 'recomposicion') return 'recomposicion';
+                      return 'salida';
+                    };
+                    const currentStageChecklist = ticket.checklists[checklistKey(ticket.stage)] || [];
+                    const checkedCount = currentStageChecklist.filter((c: any) => c.checked).length;
                     const nextStage = getNextStage(stage);
                     const prevStage = getPrevStage(stage);
 
@@ -506,8 +506,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           </div>
 
                           <div className="text-right">
-                            <span className="font-extrabold text-slate-900 font-mono text-xs">
-                              {formatCurrency(totals.total)}
+                            <span className="font-extrabold text-[#0B3558] font-mono text-xs block">
+                              {formatCurrency(totals.fixedCost)}
+                            </span>
+                            <span className="text-[10px] text-amber-700 font-mono block">
+                              Saldo: {formatCurrency(totals.pendingBalance)}
                             </span>
                           </div>
                         </div>

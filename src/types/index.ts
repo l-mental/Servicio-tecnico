@@ -1,4 +1,21 @@
-export type TicketStage = 'entrada' | 'desarmado' | 'recomposicion' | 'salida';
+export type TicketStage = 
+  | 'por_asignar' 
+  | 'en_reparacion' 
+  | 'en_prueba' 
+  | 'entregado'
+  | 'entrada' 
+  | 'desarmado' 
+  | 'recomposicion' 
+  | 'salida';
+
+export type EquipmentCategory = 
+  | 'laptop' 
+  | 'pc' 
+  | 'equipo_sonido' 
+  | 'televisor' 
+  | 'microonda' 
+  | 'cafeteras' 
+  | 'otro';
 
 export type Priority = 'baja' | 'media' | 'alta' | 'urgente';
 
@@ -37,8 +54,9 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  refPhone?: string; // Teléfono de referencia / contacto adicional
   email: string;
-  documentId: string;
+  documentId: string; // CI / DNI
   address?: string;
 }
 
@@ -46,14 +64,23 @@ export type DeviceType = 'smartphone' | 'laptop' | 'pc' | 'consola' | 'tablet' |
 
 export interface Device {
   type: DeviceType;
+  equipmentCategory?: EquipmentCategory;
+  otherEquipmentName?: string;
   brand: string;
   model: string;
   serialNumber: string;
   color?: string;
   powerState: 'enciende' | 'no_enciende' | 'intermitente';
-  securityCode?: string; // Patrón o PIN de prueba
+  securityCode?: string;
   physicalCondition: string[];
   accessories: string[];
+  
+  // Datos específicos de la Nota de Recepción SCANTEC
+  usageTime?: string; // Tiempo de uso
+  isFirstOwner?: boolean; // Primer dueño: Sí / No
+  wasRepairedBefore?: boolean; // ¿Fue reparado antes?: Sí / No
+  repairHistoryNotes?: string; // Antecedentes de reparaciones
+  repairHistoryTime?: string; // Cuánto tiempo atrás
 }
 
 export interface ChecklistItem {
@@ -85,9 +112,10 @@ export interface TimelineEvent {
 
 export interface Ticket {
   id: string;
-  code: string; // e.g., TCK-2026-081
+  code: string; // e.g., ORD-2026-104
   createdAt: string;
   updatedAt: string;
+  receptionDate?: string;
   stage: TicketStage;
   priority: Priority;
   status: TicketStatus;
@@ -99,6 +127,18 @@ export interface Ticket {
   assignedTechnicianId?: string;
   estimatedDeliveryDate?: string;
   actualDeliveryDate?: string;
+  
+  // Estructura financiera: Costo Fijo, Anticipo Inicial y Saldo Pendiente
+  fixedCost?: number; // Costo total fijo acordado en Bs.
+  advancePayment?: number; // Anticipo inicial abonado al ingreso en Bs.
+  pendingBalance?: number; // Saldo pendiente a la entrega en Bs.
+  
+  // Presupuesto técnico estimado (SCANTEC)
+  minCost?: number; // Costo mínimo estimado
+  maxCost?: number; // Costo máximo estimado
+  minRepairTime?: string; // Tiempo mín. de reparación
+  maxRepairTime?: string; // Tiempo máx. de reparación
+
   laborCost: number;
   parts: UsedPart[];
   isPaid: boolean;
@@ -106,10 +146,15 @@ export interface Ticket {
   warrantyDays: number;
   timeSpentMinutes: number;
   checklists: {
-    entrada: ChecklistItem[];
-    desarmado: ChecklistItem[];
-    recomposicion: ChecklistItem[];
-    salida: ChecklistItem[];
+    entrada?: ChecklistItem[];
+    desarmado?: ChecklistItem[];
+    recomposicion?: ChecklistItem[];
+    salida?: ChecklistItem[];
+    por_asignar?: ChecklistItem[];
+    en_reparacion?: ChecklistItem[];
+    en_prueba?: ChecklistItem[];
+    entregado?: ChecklistItem[];
+    [key: string]: ChecklistItem[] | undefined;
   };
   notes: string[];
   timeline: TimelineEvent[];

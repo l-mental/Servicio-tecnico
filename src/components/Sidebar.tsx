@@ -66,18 +66,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'PANEL PRINCIPAL',
       items: [
         {
+          id: 'list' as const,
+          label: 'Directorio de Órdenes',
+          icon: <TableProperties className="w-5 h-5 shrink-0" />,
+          badge: `${tickets.length}`,
+          badgeClass: 'bg-blue-100 text-[#0B3558] font-bold',
+        },
+        {
           id: 'kanban' as const,
           label: 'Tablero 4 Etapas',
           icon: <Kanban className="w-5 h-5 shrink-0" />,
           badge: `${activeTicketsCount} activas`,
           badgeClass: 'bg-purple-100 text-[#8C57FF]',
-        },
-        {
-          id: 'list' as const,
-          label: 'Directorio de Órdenes',
-          icon: <TableProperties className="w-5 h-5 shrink-0" />,
-          badge: `${tickets.length}`,
-          badgeClass: 'bg-slate-100 text-slate-700',
         },
       ],
     },

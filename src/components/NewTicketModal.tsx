@@ -3,18 +3,20 @@ import {
   X, 
   Plus, 
   Laptop, 
-  Smartphone, 
-  Gamepad2, 
   Monitor, 
-  Tablet, 
-  Watch, 
-  User, 
-  Wrench, 
-  Clock, 
+  Volume2, 
+  Tv, 
+  Microwave, 
+  Coffee, 
   DollarSign, 
-  AlertTriangle 
+  Calendar, 
+  ShieldCheck, 
+  FileText, 
+  Check,
+  AlertCircle
 } from 'lucide-react';
-import { DeviceType, Employee, Priority, Ticket } from '../types';
+import { DeviceType, Employee, EquipmentCategory, Priority, Ticket, TicketStage } from '../types';
+import { formatCurrency } from '../utils/helpers';
 
 interface NewTicketModalProps {
   isOpen: boolean;
@@ -35,112 +37,143 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // Form states
+  // Datos del Cliente (SCANTEC)
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('+591 ');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerRefPhone, setCustomerRefPhone] = useState('');
   const [customerDocument, setCustomerDocument] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
-  const [deviceType, setDeviceType] = useState<DeviceType>('laptop');
+  // Datos del Equipo (SCANTEC)
+  const [equipmentCategory, setEquipmentCategory] = useState<EquipmentCategory>('laptop');
+  const [otherEquipmentName, setOtherEquipmentName] = useState('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
+  const [usageTime, setUsageTime] = useState('1 año');
+  const [isFirstOwner, setIsFirstOwner] = useState<boolean>(true);
+  const [wasRepairedBefore, setWasRepairedBefore] = useState<boolean>(false);
+  const [repairHistoryNotes, setRepairHistoryNotes] = useState('Sin antecedentes de reparaciones');
+  const [repairHistoryTime, setRepairHistoryTime] = useState('N/A');
   const [powerState, setPowerState] = useState<'enciende' | 'no_enciende' | 'intermitente'>('no_enciende');
-  const [securityCode, setSecurityCode] = useState('');
-  const [physicalNotes, setPhysicalNotes] = useState('Sin golpes aparentes');
+  const [physicalNotes, setPhysicalNotes] = useState('Buen estado físico general');
   const [accessories, setAccessories] = useState('Cargador original');
 
+  // Descripción del Problema
   const [problemReported, setProblemReported] = useState('');
+  const [technicalDiagnosis, setTechnicalDiagnosis] = useState('');
+
+  // Presupuesto y Condiciones Financieras (Costo Fijo, Anticipo y Saldo)
+  const [fixedCost, setFixedCost] = useState<number>(350);
+  const [advancePayment, setAdvancePayment] = useState<number>(150);
+  const [minCost, setMinCost] = useState<number>(280);
+  const [maxCost, setMaxCost] = useState<number>(450);
+  const [minRepairTime, setMinRepairTime] = useState('24 Horas Hábiles');
+  const [maxRepairTime, setMaxRepairTime] = useState('48 Horas Hábiles');
+
+  // Estado y Asignación
+  const [stage, setStage] = useState<TicketStage>('por_asignar');
+  const [assignedTechnicianId, setAssignedTechnicianId] = useState('');
   const [priority, setPriority] = useState<Priority>('media');
-  const [assignedTechnicianId, setAssignedTechnicianId] = useState(
-    employees.find(e => e.role === 'tecnico')?.id || ''
-  );
-  const [laborCost, setLaborCost] = useState<number>(40);
-  const [estimatedDeliveryDays, setEstimatedDeliveryDays] = useState<number>(2);
+  const [warrantyDays, setWarrantyDays] = useState<number>(90);
+
+  // Saldo pendiente calculado
+  const pendingBalance = Math.max(0, (Number(fixedCost) || 0) - (Number(advancePayment) || 0));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !brand.trim() || !model.trim() || !problemReported.trim()) {
-      alert('Por favor complete los campos obligatorios: Nombre de cliente, Marca, Modelo y Falla reportada.');
+    if (!customerName.trim() || !model.trim() || !problemReported.trim()) {
+      alert('Por favor complete los campos obligatorios: Nombre de cliente, Modelo del equipo y Descripción del problema.');
       return;
     }
 
-    const orderNumber = existingCount + 101;
+    const orderNumber = existingCount + 105;
     const code = `ORD-2026-${orderNumber}`;
     const now = new Date().toISOString();
 
-    const deliveryDate = new Date();
-    deliveryDate.setDate(deliveryDate.getDate() + estimatedDeliveryDays);
-    const estimatedDeliveryDate = deliveryDate.toISOString().split('T')[0];
+    const deviceType: DeviceType = 
+      equipmentCategory === 'laptop' ? 'laptop' :
+      equipmentCategory === 'pc' ? 'pc' :
+      equipmentCategory === 'otro' ? 'otro' : 'laptop';
 
     const physicalConditionList = physicalNotes.split(',').map(s => s.trim()).filter(Boolean);
     const accessoriesList = accessories.split(',').map(s => s.trim()).filter(Boolean);
+
+    // Auto-ajustar etapa si ya tiene técnico
+    const finalStage: TicketStage = stage === 'por_asignar' && assignedTechnicianId ? 'en_reparacion' : stage;
 
     const newTicket: Ticket = {
       id: `tck-${Date.now()}`,
       code,
       createdAt: now,
       updatedAt: now,
-      stage: 'entrada',
+      receptionDate: now,
+      stage: finalStage,
       priority,
-      status: 'en_progreso',
+      status: finalStage === 'entregado' ? 'entregado' : 'en_progreso',
       customer: {
         id: `cust-${Date.now()}`,
         name: customerName.trim(),
         phone: customerPhone.trim(),
+        refPhone: customerRefPhone.trim() || undefined,
         email: customerEmail.trim() || `${customerName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
         documentId: customerDocument.trim() || 'S/N',
         address: customerAddress.trim() || undefined,
       },
       device: {
         type: deviceType,
-        brand: brand.trim(),
+        equipmentCategory,
+        otherEquipmentName: equipmentCategory === 'otro' ? otherEquipmentName.trim() : undefined,
+        brand: brand.trim() || 'Genérico',
         model: model.trim(),
         serialNumber: serialNumber.trim() || `SN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
         powerState,
-        securityCode: securityCode.trim() || undefined,
         physicalCondition: physicalConditionList.length > 0 ? physicalConditionList : ['Buen estado'],
         accessories: accessoriesList.length > 0 ? accessoriesList : ['Solo equipo'],
+        usageTime: usageTime.trim(),
+        isFirstOwner,
+        wasRepairedBefore,
+        repairHistoryNotes: repairHistoryNotes.trim(),
+        repairHistoryTime: repairHistoryTime.trim(),
       },
       problemReported: problemReported.trim(),
+      technicalDiagnosis: technicalDiagnosis.trim() || 'Diagnóstico preliminar al momento del ingreso.',
       assignedTechnicianId: assignedTechnicianId || undefined,
-      estimatedDeliveryDate,
-      laborCost: Number(laborCost) || 0,
+      fixedCost: Number(fixedCost) || 0,
+      advancePayment: Number(advancePayment) || 0,
+      pendingBalance,
+      minCost: Number(minCost) || Number(fixedCost) * 0.8,
+      maxCost: Number(maxCost) || Number(fixedCost) * 1.25,
+      minRepairTime,
+      maxRepairTime,
+      laborCost: Number(fixedCost) || 0,
       parts: [],
-      isPaid: false,
-      paymentMethod: 'pendiente',
-      warrantyDays: 90,
-      timeSpentMinutes: 15,
+      isPaid: pendingBalance === 0,
+      paymentMethod: advancePayment > 0 ? 'efectivo' : 'pendiente',
+      warrantyDays,
+      timeSpentMinutes: 10,
       checklists: {
         entrada: [
-          { id: 'e1', label: 'Inspección visual externa y registro fotográfico inicial', checked: true },
-          { id: 'e2', label: 'Verificación de encendido y comportamiento de LED indicador', checked: true },
-          { id: 'e3', label: 'Inventario físico de accesorios recibidos con el cliente', checked: true },
-          { id: 'e4', label: 'Registro de datos de contacto y WhatsApp del cliente', checked: true },
-          { id: 'e5', label: 'Asignación preliminar de técnico por especialidad', checked: Boolean(assignedTechnicianId) },
+          { id: 'e1', label: 'Inspección física y registro de nota de recepción', checked: true },
+          { id: 'e2', label: 'Verificación de encendido y accesorios recibidos', checked: true },
+          { id: 'e3', label: 'Registro de costo fijo y cobro de anticipo inicial', checked: true },
+          { id: 'e4', label: 'Emisión de nota técnica SCANTEC al cliente', checked: true },
         ],
         desarmado: [
-          { id: 'd1', label: 'Uso de pulsera antiestática (ESD Safe)', checked: false },
-          { id: 'd2', label: 'Desconexión física inmediata de batería principal', checked: false },
-          { id: 'd3', label: 'Inspección de stickers detectores de líquido (LDI)', checked: false },
-          { id: 'd4', label: 'Fotografías internas de áreas afectadas por sulfato o daño', checked: false },
-          { id: 'd5', label: 'Clasificación de tornillos y flexores en bandeja magnética', checked: false },
+          { id: 'd1', label: 'Desensamble y verificación de placas', checked: false },
+          { id: 'd2', label: 'Inspección de daños por líquido o cortocircuito', checked: false },
         ],
         recomposicion: [
-          { id: 'r1', label: 'Limpieza ultrasónica o desengrasado con alcohol isopropílico', checked: false },
-          { id: 'r2', label: 'Reemplazo o soldadura de repuesto original', checked: false },
-          { id: 'r3', label: 'Renovación de pastas y pads térmicos', checked: false },
-          { id: 'r4', label: 'Reensamble con torque calibrado', checked: false },
+          { id: 'r1', label: 'Reemplazo o reparación de componentes', checked: false },
+          { id: 'r2', label: 'Control de temperatura y pastas térmicas', checked: false },
         ],
         salida: [
-          { id: 's1', label: 'Prueba completa de encendido y ciclo de carga', checked: false },
-          { id: 's2', label: 'Test de periféricos (teclado, pantalla, táctil, audio, red)', checked: false },
-          { id: 's3', label: 'Control de calidad QC y sanitización externa', checked: false },
-          { id: 's4', label: 'Emisión de reporte técnico y entrega de garantía formal', checked: false },
+          { id: 's1', label: 'Control de calidad QC y pruebas de estrés', checked: false },
+          { id: 's2', label: 'Cobro de saldo pendiente y entrega al cliente', checked: false },
         ],
       },
-      notes: [],
+      notes: [`Ingresado por ${currentUser.name}. Anticipo recibido: Bs. ${advancePayment}. Saldo pendiente: Bs. ${pendingBalance}.`],
       timeline: [
         {
           id: `tm-${Date.now()}`,
@@ -148,9 +181,9 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
           authorName: currentUser.name,
           authorRole: currentUser.roleLabel,
           actionType: 'creacion',
-          title: 'Recepción formal en Etapa 1 (Entrada)',
-          description: `Equipo ingresado al taller por ${customerName}. Falla reportada: "${problemReported.trim()}".`,
-          stage: 'entrada',
+          title: 'Orden Registrada en Taller',
+          description: `Ingreso formal del equipo. Costo fijo: ${formatCurrency(Number(fixedCost))}, Anticipo: ${formatCurrency(Number(advancePayment))}, Saldo: ${formatCurrency(pendingBalance)}.`,
+          stage: finalStage,
         },
       ],
     };
@@ -159,266 +192,507 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     onClose();
   };
 
+  const categories = [
+    { id: 'laptop', label: 'Laptop', icon: Laptop },
+    { id: 'pc', label: 'PC', icon: Monitor },
+    { id: 'equipo_sonido', label: 'Equipo Sonido', icon: Volume2 },
+    { id: 'televisor', label: 'Televisor', icon: Tv },
+    { id: 'microonda', label: 'Microondas', icon: Microwave },
+    { id: 'cafeteras', label: 'Cafeteras', icon: Coffee },
+    { id: 'otro', label: 'Otro Equipo', icon: FileText },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden my-auto">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">
-              01
+        <div className="bg-[#0B3558] text-white p-4 sm:p-5 flex items-center justify-between shrink-0">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black tracking-widest bg-blue-500 text-white px-2 py-0.5 rounded uppercase">
+                SCANTEC MULTISERVICIOS
+              </span>
+              <span className="text-xs text-blue-200">Recepción Oficial</span>
             </div>
-            <div>
-              <h2 className="text-base font-bold text-white">
-                Recepción de Equipo · Etapa 1: Entrada
-              </h2>
-              <p className="text-xs text-slate-400">
-                Apertura formal de orden de servicio técnico y recolección de parámetros de laboratorio.
-              </p>
-            </div>
+            <h2 className="text-lg font-black tracking-tight text-white mt-1">
+              Registro de Orden de Servicio Técnico
+            </h2>
+            <p className="text-xs text-slate-300">
+              Formulario de ingreso conforme a la <strong>Nota de Recepción de Equipos</strong> con Costo Fijo y Anticipo.
+            </p>
           </div>
-
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+            className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6 text-xs">
+        {/* Scrollable Form */}
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1 text-xs">
           
-          {/* Section 1: Customer */}
+          {/* SECTION 1: DATOS DEL CLIENTE */}
           <div className="space-y-3">
-            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5 pb-1 border-b border-slate-100">
-              <User className="w-4 h-4 text-blue-600" />
-              1. Datos del Cliente
-            </h3>
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span className="w-6 h-6 rounded-lg bg-[#0B3558] text-white flex items-center justify-center font-bold text-xs">
+                1
+              </span>
+              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
+                Datos del Cliente
+              </h3>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">
-                  Nombre completo *
-                </label>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="sm:col-span-6 space-y-1">
+                <label className="font-bold text-slate-700 block">Nombre y Apellido *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Carlos Méndez"
+                  placeholder="Ej. Juan Carlos Mamani Pérez"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">
-                  Teléfono / WhatsApp *
-                </label>
+              <div className="sm:col-span-3 space-y-1">
+                <label className="font-bold text-slate-700 block">Teléfono / WhatsApp *</label>
                 <input
                   type="text"
                   required
-                  placeholder="+591 7XXXXXXX"
+                  placeholder="+591 78123456"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg font-mono focus:border-blue-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">
-                  Cédula / DNI / NIT
-                </label>
+              <div className="sm:col-span-3 space-y-1">
+                <label className="font-bold text-slate-700 block">Teléfono Referencia (REF)</label>
                 <input
                   type="text"
-                  placeholder="Ej. 6543210 LP"
-                  value={customerDocument}
-                  onChange={(e) => setCustomerDocument(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg font-mono focus:border-blue-500 focus:outline-hidden"
+                  placeholder="Ej. 71234567 (Hermano)"
+                  value={customerRefPhone}
+                  onChange={(e) => setCustomerRefPhone(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">
-                  Correo Electrónico
-                </label>
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">C.I. / Documento</label>
+                <input
+                  type="text"
+                  placeholder="Ej. 8493021 LP"
+                  value={customerDocument}
+                  onChange={(e) => setCustomerDocument(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">Correo Electrónico</label>
                 <input
                   type="email"
                   placeholder="cliente@ejemplo.com"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">Dirección / Zona</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Av. 6 de Agosto #1234, Sopocachi"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 2: Device */}
+          {/* SECTION 2: DATOS DEL EQUIPO (SELECCIÓN SCANTEC) */}
           <div className="space-y-3">
-            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5 pb-1 border-b border-slate-100">
-              <Laptop className="w-4 h-4 text-blue-600" />
-              2. Datos del Dispositivo & Estado Físico
-            </h3>
-
-            {/* Type selector */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {[
-                { type: 'laptop', label: 'Laptop' },
-                { type: 'smartphone', label: 'Celular' },
-                { type: 'consola', label: 'Consola' },
-                { type: 'pc', label: 'PC Torre' },
-                { type: 'tablet', label: 'Tablet' },
-                { type: 'smartwatch', label: 'Smartwatch' },
-              ].map((item) => (
-                <button
-                  type="button"
-                  key={item.type}
-                  onClick={() => setDeviceType(item.type as DeviceType)}
-                  className={`p-2 rounded-lg border text-center transition-all ${
-                    deviceType === item.type
-                      ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold shadow-2xs'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span className="w-6 h-6 rounded-lg bg-[#0B3558] text-white flex items-center justify-center font-bold text-xs">
+                2
+              </span>
+              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
+                Datos del Equipo (Categoría & Antecedentes)
+              </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Marca *</label>
+            {/* Equipment Categories Buttons */}
+            <div className="space-y-1.5">
+              <label className="font-bold text-slate-700 block">
+                Seleccione el tipo de equipo recibido:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                {categories.map((c) => {
+                  const Icon = c.icon;
+                  const isSelected = equipmentCategory === c.id;
+                  return (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => setEquipmentCategory(c.id as EquipmentCategory)}
+                      className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 text-center transition-all ${
+                        isSelected
+                          ? 'bg-[#0B3558] text-white border-[#0B3558] shadow-sm font-bold'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[10px]">{c.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {equipmentCategory === 'otro' && (
+              <div className="space-y-1 bg-blue-50 p-3 rounded-xl border border-blue-200">
+                <label className="font-bold text-blue-900 block">Especifique el Otro Equipo:</label>
                 <input
                   type="text"
-                  required
-                  placeholder="Ej. Apple, Asus, Lenovo, Sony"
+                  placeholder="Ej. Proyector Epson, Impresora 3D, Consola PlayStation 5"
+                  value={otherEquipmentName}
+                  onChange={(e) => setOtherEquipmentName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-blue-300 focus:outline-hidden"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">Marca</label>
+                <input
+                  type="text"
+                  placeholder="Ej. ASUS, Samsung, Dell, Sony"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Modelo exacto *</label>
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">Modelo Exacto *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej. MacBook Pro M1 14, TUF F15, PS5"
+                  placeholder="Ej. ROG Zephyrus G14, Smart TV 55 4K"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Número de Serie (S/N)</label>
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">Número de Serie (S/N)</label>
                 <input
                   type="text"
-                  placeholder="Ej. C02GK92YQ..."
+                  placeholder="Ej. SN-49204928"
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg font-mono focus:border-blue-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">¿Enciende al recibir?</label>
-                <select
-                  value={powerState}
-                  onChange={(e) => setPowerState(e.target.value as any)}
-                  className="w-full p-2 border border-slate-300 rounded-lg bg-white"
-                >
-                  <option value="no_enciende">No enciende (Apagado total)</option>
-                  <option value="enciende">Enciende normalmente</option>
-                  <option value="intermitente">Intermitente / Se reinicia</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">PIN / Patrón de desbloqueo</label>
-                <input
-                  type="text"
-                  placeholder="Ej. 1234, Patrón en L, Sin clave"
-                  value={securityCode}
-                  onChange={(e) => setSecurityCode(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg font-mono"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Accesorios recibidos</label>
+              {/* Antecedentes SCANTEC */}
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">Tiempo de Uso</label>
                 <input
                   type="text"
-                  placeholder="Ej. Cargador original, Funda, Cable"
+                  placeholder="Ej. 1 año, 6 meses, 2 años"
+                  value={usageTime}
+                  onChange={(e) => setUsageTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">¿Primer dueño?</label>
+                <div className="flex items-center gap-4 py-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="firstOwner"
+                      checked={isFirstOwner}
+                      onChange={() => setIsFirstOwner(true)}
+                    />
+                    <span>Sí</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="firstOwner"
+                      checked={!isFirstOwner}
+                      onChange={() => setIsFirstOwner(false)}
+                    />
+                    <span>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">¿Fue reparado antes?</label>
+                <div className="flex items-center gap-4 py-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="repairedBefore"
+                      checked={wasRepairedBefore}
+                      onChange={() => setWasRepairedBefore(true)}
+                    />
+                    <span>Sí</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="repairedBefore"
+                      checked={!wasRepairedBefore}
+                      onChange={() => setWasRepairedBefore(false)}
+                    />
+                    <span>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="sm:col-span-8 space-y-1">
+                <label className="font-bold text-slate-700 block">Antecedentes de Reparaciones</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Cambio de display hace 8 meses, mantenimiento preventivo"
+                  value={repairHistoryNotes}
+                  onChange={(e) => setRepairHistoryNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="sm:col-span-4 space-y-1">
+                <label className="font-bold text-slate-700 block">¿Cuánto tiempo atrás?</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Hace 6 meses"
+                  value={repairHistoryTime}
+                  onChange={(e) => setRepairHistoryTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="sm:col-span-6 space-y-1">
+                <label className="font-bold text-slate-700 block">Estado Físico / Detalles</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Raspones leves en carcasa, sin golpes"
+                  value={physicalNotes}
+                  onChange={(e) => setPhysicalNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="sm:col-span-6 space-y-1">
+                <label className="font-bold text-slate-700 block">Accesorios Recibidos</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Cargador original 65W, funda protectora"
                   value={accessories}
                   onChange={(e) => setAccessories(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="text-slate-600 block mb-1 font-medium">
-                Estado estético / Daños visibles iniciales (separados por coma)
-              </label>
-              <input
-                type="text"
-                placeholder="Ej. Rayón en tapa superior, Vidrio templado fisurado, Falta 1 tornillo"
-                value={physicalNotes}
-                onChange={(e) => setPhysicalNotes(e.target.value)}
-                className="w-full p-2 border border-slate-300 rounded-lg"
-              />
             </div>
           </div>
 
-          {/* Section 3: Technical Failure & Diagnostics */}
+          {/* SECTION 3: DESCRIPCIÓN DEL PROBLEMA */}
           <div className="space-y-3">
-            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5 pb-1 border-b border-slate-100">
-              <Wrench className="w-4 h-4 text-blue-600" />
-              3. Falla Reportada & Asignación
-            </h3>
-
-            <div>
-              <label className="text-slate-600 block mb-1 font-medium">
-                Descripción detallada de la falla o motivo de ingreso *
-              </label>
-              <textarea
-                required
-                rows={3}
-                placeholder="Explique qué le ocurre al equipo según el usuario (ej. cayó en agua, no da imagen tras golpe, ventilador ruidoso, se apaga a los 10 mins)..."
-                value={problemReported}
-                onChange={(e) => setProblemReported(e.target.value)}
-                className="w-full p-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:outline-hidden leading-relaxed"
-              />
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span className="w-6 h-6 rounded-lg bg-[#0B3558] text-white flex items-center justify-center font-bold text-xs">
+                3
+              </span>
+              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
+                Descripción del Problema & Diagnóstico Preliminar
+              </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Prioridad</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block">Falla Reportada por el Cliente *</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Describa el síntoma manifestado por el cliente..."
+                  value={problemReported}
+                  onChange={(e) => setProblemReported(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block">Diagnóstico Técnico Inicial</label>
+                <textarea
+                  rows={3}
+                  placeholder="Observaciones iniciales del técnico recepcionista..."
+                  value={technicalDiagnosis}
+                  onChange={(e) => setTechnicalDiagnosis(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-hidden focus:border-[#0B3558]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 4: PRESUPUESTO - COSTO FIJO, ANTICIPO INICIAL Y SALDO PENDIENTE */}
+          <div className="space-y-3 bg-blue-50/60 p-4 rounded-xl border border-blue-200">
+            <div className="flex items-center gap-2 pb-1">
+              <DollarSign className="w-5 h-5 text-[#0B3558]" />
+              <h3 className="font-extrabold text-[#0B3558] text-sm uppercase tracking-wide">
+                Presupuesto Económico: Costo Fijo, Anticipo y Saldo
+              </h3>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              Registre el costo total fijo del servicio y el anticipo inicial abonado por el cliente al ingresar el equipo. El saldo se cobrará automáticamente al momento de la entrega.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              
+              {/* Costo Fijo */}
+              <div className="bg-white p-3 rounded-xl border border-slate-300 shadow-2xs space-y-1">
+                <label className="font-black text-slate-800 uppercase text-[10px] block">
+                  Costo Fijo Acordado (Bs.) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">Bs.</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={10}
+                    required
+                    value={fixedCost}
+                    onChange={(e) => setFixedCost(Number(e.target.value))}
+                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-base text-[#0B3558] focus:outline-hidden"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 block">Precio cerrado del trabajo</span>
+              </div>
+
+              {/* Anticipo Inicial */}
+              <div className="bg-white p-3 rounded-xl border border-emerald-300 shadow-2xs space-y-1">
+                <label className="font-black text-emerald-800 uppercase text-[10px] block">
+                  Anticipo Inicial Recibido (Bs.) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-emerald-600">Bs.</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={fixedCost}
+                    step={10}
+                    required
+                    value={advancePayment}
+                    onChange={(e) => setAdvancePayment(Number(e.target.value))}
+                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-emerald-300 font-mono font-bold text-base text-emerald-700 focus:outline-hidden"
+                  />
+                </div>
+                <span className="text-[10px] text-emerald-600 block">Abonado al momento del ingreso</span>
+              </div>
+
+              {/* Saldo Pendiente Calculado */}
+              <div className="bg-amber-50 p-3 rounded-xl border border-amber-300 shadow-2xs space-y-1">
+                <label className="font-black text-amber-900 uppercase text-[10px] block">
+                  Saldo Pendiente a la Entrega
+                </label>
+                <div className="text-xl font-black font-mono text-amber-800 py-1">
+                  {formatCurrency(pendingBalance)}
+                </div>
+                <span className="text-[10px] text-amber-700 block">
+                  {pendingBalance === 0 ? '✓ Orden pagada al 100%' : 'Se cobrará al retirar el equipo'}
+                </span>
+              </div>
+
+            </div>
+
+            {/* Rangos estimados y tiempos */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-[11px]">
+              <div className="space-y-1">
+                <label className="text-slate-600 font-semibold block">Costo Mínimo Estimado:</label>
+                <input
+                  type="number"
+                  value={minCost}
+                  onChange={(e) => setMinCost(Number(e.target.value))}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-600 font-semibold block">Costo Máximo Estimado:</label>
+                <input
+                  type="number"
+                  value={maxCost}
+                  onChange={(e) => setMaxCost(Number(e.target.value))}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-600 font-semibold block">Tiempo Mín. Reparación:</label>
+                <input
+                  type="text"
+                  value={minRepairTime}
+                  onChange={(e) => setMinRepairTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-slate-600 font-semibold block">Tiempo Máx. Reparación:</label>
+                <input
+                  type="text"
+                  value={maxRepairTime}
+                  onChange={(e) => setMaxRepairTime(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* SECTION 5: ESTADO INICIAL Y ASIGNACIÓN */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span className="w-6 h-6 rounded-lg bg-[#0B3558] text-white flex items-center justify-center font-bold text-xs">
+                5
+              </span>
+              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
+                Estado Inicial & Asignación
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block">Estado Inicial</label>
                 <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as Priority)}
-                  className="w-full p-2 border border-slate-300 rounded-lg bg-white font-medium"
+                  value={stage}
+                  onChange={(e) => setStage(e.target.value as TicketStage)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-bold"
                 >
-                  <option value="baja">Baja</option>
-                  <option value="media">Media (Estándar)</option>
-                  <option value="alta">Alta</option>
-                  <option value="urgente">Urgente (Prioritaria)</option>
+                  <option value="por_asignar">1. Por asignar</option>
+                  <option value="en_reparacion">2. En reparación</option>
+                  <option value="en_prueba">3. En prueba</option>
+                  <option value="entregado">4. Entregado</option>
                 </select>
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Técnico Asignado</label>
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block">Técnico Asignado</label>
                 <select
                   value={assignedTechnicianId}
                   onChange={(e) => setAssignedTechnicianId(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg bg-white font-medium"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"
                 >
-                  <option value="">Por asignar en taller</option>
-                  {employees.filter(e => e.role === 'tecnico' || e.role === 'supervisor').map((emp) => (
+                  <option value="">Dejar sin asignar (Por asignar)</option>
+                  {employees.filter(e => e.role === 'tecnico' || e.role === 'supervisor').map(emp => (
                     <option key={emp.id} value={emp.id}>
                       {emp.name} ({emp.specialty.split(',')[0]})
                     </option>
@@ -426,46 +700,38 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Mano de Obra Est. (Bs.)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={laborCost}
-                  onChange={(e) => setLaborCost(Number(e.target.value))}
-                  className="w-full p-2 border border-slate-300 rounded-lg font-mono"
-                />
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block">Prioridad</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Priority)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                >
+                  <option value="baja">Baja</option>
+                  <option value="media">Media (Estándar)</option>
+                  <option value="alta">Alta</option>
+                  <option value="urgente">Urgente (Prioridad Máxima)</option>
+                </select>
               </div>
 
-              <div>
-                <label className="text-slate-600 block mb-1 font-medium">Plazo Entrega (Días)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={estimatedDeliveryDays}
-                  onChange={(e) => setEstimatedDeliveryDays(Number(e.target.value))}
-                  className="w-full p-2 border border-slate-300 rounded-lg font-mono"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Footer buttons */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+          {/* Action buttons */}
+          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium rounded-lg transition-colors"
+              className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+              className="px-6 py-2.5 rounded-xl bg-[#0B3558] hover:bg-[#07243c] text-white font-black text-xs shadow-md transition-all flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" />
-              <span>Registrar Orden en Entrada</span>
+              <Check className="w-4 h-4 stroke-[3]" />
+              <span>Guardar e Imprimir Nota</span>
             </button>
           </div>
 

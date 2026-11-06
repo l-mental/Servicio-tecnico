@@ -80,7 +80,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   const [showAdvancePrompt, setShowAdvancePrompt] = useState(false);
   const [newChecklistLabel, setNewChecklistLabel] = useState('');
 
-  const stages: TicketStage[] = ['entrada', 'desarmado', 'recomposicion', 'salida'];
+  const stages: TicketStage[] = ['por_asignar', 'en_reparacion', 'en_prueba', 'entregado'];
   const totals = calculateTicketTotals(currentTicket);
   const assignedTech = employees.find(e => e.id === currentTicket.assignedTechnicianId);
 
@@ -88,13 +88,14 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   const handleStageChange = (newStage: TicketStage, note?: string) => {
     const prevStage = currentTicket.stage;
     const now = new Date().toISOString();
+    const isEntregado = newStage === 'entregado' || newStage === 'salida';
 
     const newEvent: TimelineEvent = {
       id: `tm-${Date.now()}`,
       timestamp: now,
       authorName: currentUser.name,
       authorRole: currentUser.roleLabel,
-      actionType: newStage === 'salida' ? 'qc_aprobado' : 'cambio_etapa',
+      actionType: isEntregado ? 'entregado' : 'cambio_etapa',
       title: `Transición de ${STAGE_CONFIG[prevStage].name} a ${STAGE_CONFIG[newStage].name}`,
       description: note || `Etapa actualizada a ${STAGE_CONFIG[newStage].name} por ${currentUser.name}.`,
       stage: newStage,
@@ -103,7 +104,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
     const updated: Ticket = {
       ...currentTicket,
       stage: newStage,
-      status: newStage === 'salida' ? 'listo_entrega' : 'en_progreso',
+      status: isEntregado ? 'entregado' : 'en_progreso',
       updatedAt: now,
       timeline: [newEvent, ...currentTicket.timeline],
     };
@@ -114,9 +115,17 @@ export const TicketModal: React.FC<TicketModalProps> = ({
     setAdvanceNotes('');
   };
 
+  const getChecklistKey = (stg: TicketStage): 'entrada' | 'desarmado' | 'recomposicion' | 'salida' => {
+    if (stg === 'por_asignar' || stg === 'entrada') return 'entrada';
+    if (stg === 'en_reparacion' || stg === 'desarmado') return 'desarmado';
+    if (stg === 'en_prueba' || stg === 'recomposicion') return 'recomposicion';
+    return 'salida';
+  };
+
   // Toggle checklist item
-  const handleToggleChecklist = (stage: TicketStage, itemId: string) => {
-    const stageItems = currentTicket.checklists[stage] || [];
+  const handleToggleChecklist = (stg: TicketStage, itemId: string) => {
+    const cKey = getChecklistKey(stg);
+    const stageItems = currentTicket.checklists[cKey] || [];
     const updatedItems = stageItems.map(item => 
       item.id === itemId ? { ...item, checked: !item.checked } : item
     );
@@ -125,7 +134,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
       ...currentTicket,
       checklists: {
         ...currentTicket.checklists,
-        [stage]: updatedItems,
+        [cKey]: updatedItems,
       },
       updatedAt: new Date().toISOString(),
     };
@@ -135,8 +144,9 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   };
 
   // Add custom checklist task
-  const handleAddChecklistItem = (stage: TicketStage) => {
+  const handleAddChecklistItem = (stg: TicketStage) => {
     if (!newChecklistLabel.trim()) return;
+    const cKey = getChecklistKey(stg);
 
     const newItem: ChecklistItem = {
       id: `chk-${Date.now()}`,
@@ -144,12 +154,12 @@ export const TicketModal: React.FC<TicketModalProps> = ({
       checked: false,
     };
 
-    const updatedItems = [...(currentTicket.checklists[stage] || []), newItem];
+    const updatedItems = [...(currentTicket.checklists[cKey] || []), newItem];
     const updated: Ticket = {
       ...currentTicket,
       checklists: {
         ...currentTicket.checklists,
-        [stage]: updatedItems,
+        [cKey]: updatedItems,
       },
       updatedAt: new Date().toISOString(),
     };
@@ -160,15 +170,16 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   };
 
   // Remove checklist item
-  const handleRemoveChecklistItem = (stage: TicketStage, itemId: string) => {
-    const stageItems = currentTicket.checklists[stage] || [];
+  const handleRemoveChecklistItem = (stg: TicketStage, itemId: string) => {
+    const cKey = getChecklistKey(stg);
+    const stageItems = currentTicket.checklists[cKey] || [];
     const updatedItems = stageItems.filter(item => item.id !== itemId);
 
     const updated: Ticket = {
       ...currentTicket,
       checklists: {
         ...currentTicket.checklists,
-        [stage]: updatedItems,
+        [cKey]: updatedItems,
       },
       updatedAt: new Date().toISOString(),
     };
@@ -316,9 +327,9 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   };
 
   const getNextStageName = (s: TicketStage): TicketStage | null => {
-    if (s === 'entrada') return 'desarmado';
-    if (s === 'desarmado') return 'recomposicion';
-    if (s === 'recomposicion') return 'salida';
+    if (s === 'por_asignar' || s === 'entrada') return 'en_reparacion';
+    if (s === 'en_reparacion' || s === 'desarmado') return 'en_prueba';
+    if (s === 'en_prueba' || s === 'recomposicion') return 'entregado';
     return null;
   };
 
@@ -555,7 +566,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  {currentTicket.checklists[currentTicket.stage]?.map((item) => (
+                  {(currentTicket.checklists[getChecklistKey(currentTicket.stage)] || []).map((item) => (
                     <div
                       key={item.id}
                       className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors group"

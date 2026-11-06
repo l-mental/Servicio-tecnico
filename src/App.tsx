@@ -35,8 +35,8 @@ export default function App() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
 
-  // View state
-  const [currentView, setCurrentView] = useState<'kanban' | 'list' | 'staff' | 'inventory' | 'reports'>('kanban');
+  // View state: Default to streamlined List View as requested
+  const [currentView, setCurrentView] = useState<'list' | 'kanban' | 'staff' | 'inventory' | 'reports'>('list');
   
   // Modals state
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -121,11 +121,12 @@ export default function App() {
 
     const prevStage = target.stage;
     const now = new Date().toISOString();
+    const isEntregado = newStage === 'entregado' || newStage === 'salida';
 
     const updated: Ticket = {
       ...target,
       stage: newStage,
-      status: newStage === 'salida' ? 'listo_entrega' : 'en_progreso',
+      status: isEntregado ? 'entregado' : 'en_progreso',
       updatedAt: now,
       timeline: [
         {
@@ -133,7 +134,7 @@ export default function App() {
           timestamp: now,
           authorName: currentUser?.name || 'Sistema',
           authorRole: currentUser?.roleLabel || 'Operador',
-          actionType: newStage === 'salida' ? 'qc_aprobado' : 'cambio_etapa',
+          actionType: isEntregado ? 'entregado' : 'cambio_etapa',
           title: `Transición a ${STAGE_CONFIG[newStage].name}`,
           description: `Avanzado desde ${STAGE_CONFIG[prevStage].name} a ${STAGE_CONFIG[newStage].name}.`,
           stage: newStage,
@@ -151,6 +152,76 @@ export default function App() {
     saveStoredEmployees(updatedEmployees);
 
     addToast('info', `Paso a Etapa: ${STAGE_CONFIG[newStage].name}`, `Orden ${target.code} trasladada a ${STAGE_CONFIG[newStage].name}.`);
+  };
+
+  // Liquidate pending balance & mark delivered
+  const handleLiquidateBalance = (ticket: Ticket) => {
+    const now = new Date().toISOString();
+    const updated: Ticket = {
+      ...ticket,
+      isPaid: true,
+      pendingBalance: 0,
+      advancePayment: ticket.fixedCost,
+      stage: 'entregado',
+      status: 'entregado',
+      updatedAt: now,
+      timeline: [
+        {
+          id: `tm-${Date.now()}`,
+          timestamp: now,
+          authorName: currentUser?.name || 'Caja',
+          authorRole: currentUser?.roleLabel || 'Operador',
+          actionType: 'entregado',
+          title: 'Saldo Liquidado y Equipo Entregado',
+          description: `Se cobró el saldo pendiente de Bs. ${ticket.pendingBalance} y se entregó el equipo con garantía.`,
+          stage: 'entregado',
+        },
+        ...ticket.timeline,
+      ],
+    };
+
+    const updatedList = tickets.map(t => t.id === updated.id ? updated : t);
+    setTickets(updatedList);
+    saveStoredTickets(updatedList);
+    addToast('success', 'Saldo Liquidado', `Orden ${ticket.code}: saldo cobrado y entrega concluida.`);
+  };
+
+  // Assign technician directly from list
+  const handleAssignTechnician = (ticketId: string, technicianId: string) => {
+    const target = tickets.find(t => t.id === ticketId);
+    if (!target) return;
+    const tech = employees.find(e => e.id === technicianId);
+    const now = new Date().toISOString();
+
+    const updated: Ticket = {
+      ...target,
+      assignedTechnicianId: technicianId,
+      stage: target.stage === 'por_asignar' || target.stage === 'entrada' ? 'en_reparacion' : target.stage,
+      updatedAt: now,
+      timeline: [
+        {
+          id: `tm-${Date.now()}`,
+          timestamp: now,
+          authorName: currentUser?.name || 'Sistema',
+          authorRole: currentUser?.roleLabel || 'Operador',
+          actionType: 'asignacion',
+          title: tech ? `Asignado a ${tech.name}` : 'Técnico desasignado',
+          description: tech ? `Orden asignada al técnico especialista ${tech.name}.` : 'Orden puesta como pendiente.',
+          stage: target.stage,
+        },
+        ...target.timeline,
+      ],
+    };
+
+    const updatedList = tickets.map(t => t.id === updated.id ? updated : t);
+    setTickets(updatedList);
+    saveStoredTickets(updatedList);
+
+    const updatedEmployees = refreshEmployeeTicketCounts(updatedList, employees);
+    setEmployees(updatedEmployees);
+    saveStoredEmployees(updatedEmployees);
+
+    addToast('success', 'Técnico Asignado', `Orden ${target.code} asignada a ${tech?.name}.`);
   };
 
   // Add new ticket (Create)
@@ -456,6 +527,9 @@ export default function App() {
             onDeleteTicket={requestDeleteTicket}
             onPrintTicket={(t) => setPrintingTicket(t)}
             onOpenNewTicket={() => setIsNewTicketOpen(true)}
+            onMoveTicketStage={handleMoveTicketStage}
+            onLiquidateBalance={handleLiquidateBalance}
+            onAssignTechnician={handleAssignTechnician}
           />
         )}
 
